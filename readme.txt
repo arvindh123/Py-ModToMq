@@ -9,3 +9,7 @@ mqtt topics
 mqtt server details
 
 The Data read from modbus and data pushed in MQTT are can be viewed throguh to web UI - which use websocket to transfer the data to Web UI
+
+
+Another Branch which is same there Mqtt payload breadcrumb in Sparkplug protocol and pushed to mqtt -
+As Ignition SCADA mqtt with sparkpkug
