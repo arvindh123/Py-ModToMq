@@ -1,2 +1,9 @@
-# To generate the base protobuf sparkplug_b Python library
-protoc -I=../../sparkplug_b/ --python_out=. ../../sparkplug_b/sparkplug_b.proto 
+Python Code - Concept
+Get data from modbus device
+Push to Mqtt broker as json payload
+Web UI - Flask 
+Easy to setup and view through web UI html page the following things
+modbus registers 
+modbus parameter details
+mqtt topics 
+mqtt server details
