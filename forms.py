@@ -2,17 +2,17 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, PasswordField,TextAreaField, SubmitField, RadioField,SelectField, BooleanField
 from wtforms.validators import DataRequired
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
-from models import pub_mqtt_topics
+from models import mod_device
 from app import db, init_db
 
 
-def pub_topics_choices():
-    topics = pub_mqtt_topics.query.with_entities(pub_mqtt_topics.id,pub_mqtt_topics.topic).all()
+def mod_device_choices():
+    mod_devices = mod_device.query.with_entities(mod_device.id,mod_device.dev_name).all()
 #     ret_list = list()
 #     for topic in topics:
 #         ret_list.append(("%s" %topic.id, topic.topic))
     # return ret_list
-    return topics
+    return mod_devices
 
 class SignupForm(FlaskForm):
     email = StringField('email',validators=[DataRequired()])
@@ -30,28 +30,25 @@ class MqttEditForm(FlaskForm):
 class ModbusEditForm(FlaskForm):
     modbus_ip = StringField('modbus_ip',validators=[DataRequired()])
     modbus_port = StringField('modbus_port',validators=[DataRequired()])
-    submit = SubmitField("save")
+    # submit = SubmitField("save")
 
-class PubMqttTopicsForm(FlaskForm):
-    topic = StringField('Topic')
-    qos = SelectField('Qos' ,choices = [('0', '0'),('1', '1'), ('2','2')])
-    retain = BooleanField('Retain')
+class ModDevicesForm(FlaskForm):
+    dev_name = StringField('Modbus Device Name')
 
+class IgnitionParaForm(FlaskForm):
+    group_id = StringField('Group ID',validators=[DataRequired()])
+    node_name = StringField('Node Name',validators=[DataRequired()])
 
 class ReadModForm(FlaskForm):
     name =  StringField('Name')
     address =  IntegerField('Register')
     qty = IntegerField('Qty')
     unit = IntegerField('Unit')
+    datatype = SelectField('Data Type' ,choices = [("Int8","Int8"),("Int16","Int16"),("Int32","Int32"),("Int64","Int64"),("UInt8","UInt8"),("UInt16","UInt16"),("UInt32","UInt32"),("UInt64","UInt64"),("Float","Float"),("Double","Double"),("Boolean","Boolean"),("String","String"),("Post Process","Post Process")])
+    byteorder = SelectField('Byte Order' ,choices = [("Big Endian","Big Endian"),("Little Endian","Little Endian")])
+    wordorder = SelectField('Word Order' ,choices = [("Big Endian","Big Endian"),("ittle Endian","ittle Endian")])
     pp = TextAreaField('Post Porcess')
-    pub_topic_id = QuerySelectField(query_factory=pub_topics_choices,get_label="topic", allow_blank=False, get_pk=lambda a: a.id)
+    mod_device_id = QuerySelectField('Modbus Device Name' ,query_factory=mod_device_choices,get_label="dev_name", allow_blank=False, get_pk=lambda a: a.id)
     # pub_topic_id = SelectField('Publish Topic' ,choices = pub_topics_choices())
-class SubMqttTopicsForm(FlaskForm):
-    pass
 
-
-class WriteModForm(FlaskForm):
-    pass
-
-
-
+    

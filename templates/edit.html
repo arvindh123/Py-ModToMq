@@ -66,6 +66,16 @@
   </table>
     <input type="submit" value="Save">
   </form>
+
+  <form method="POST" action="/ignition/edit">
+    {{ ignition_edit.hidden_tag() }}
+    <table>
+    
+    <tr><td>{{ ignition_edit.group_id.label }} {{  ignition_edit.group_id() }}  </td>  </tr>
+    <tr><td>{{ ignition_edit.node_name.label }} {{ ignition_edit.node_name() }} </td>  </tr>
+  </table>
+    <input type="submit" value="Save">
+  </form>
 </div>
 
 </body>

@@ -2,9 +2,8 @@ from app import app,db,MqStatParent,ModStatParent,MqDataParent,MqStatChild , MqD
 
 from threading import Lock
 from flask import Flask ,request , render_template, redirect
-from models import User, modbus_address,mqtt_parameters,modbus_parameters, all_status,\
-    pub_mqtt_topics, read_mod_registers, sub_mqtt_topics, write_mod_registers
-from forms import SignupForm, MqttEditForm, ModbusEditForm, PubMqttTopicsForm, ReadModForm, pub_topics_choices
+from models import User, ignition_parameter,mod_device,mqtt_parameters, modbus_parameters,read_mod_registers, all_status
+from forms import SignupForm, MqttEditForm, ModbusEditForm, ModDevicesForm, IgnitionParaForm,ReadModForm, mod_device_choices
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
 from flask_sqlalchemy import SQLAlchemy
@@ -14,7 +13,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 login_manager = LoginManager()
 login_manager.init_app(app)
-from process import on_connect,ModReadJson,ModWriteJson,is_connected,validate_ip,Mqtt_process,Mod_ReadWrite
+from process import on_connect,ModReadReg,is_connected,validate_ip,Mqtt_process,Mod_ReadWrite
 
 
 
@@ -51,7 +50,8 @@ def background_thread(MqStatParent,MqDataParent,ModStatParent):
                 db.session.commit()
         if MqDataParent.poll():
             msg = MqDataParent.recv()
-            socketio.emit('Data_Sent', {'data': "sent at- " + str(datetime.now()) + "  | Topic- " + msg[0].topic + "  | Payload- " +  msg[1]}, namespace='/Gate')
+            # socketio.emit('Data_Sent', {'data': "sent at- " + str(datetime.now()) + "  | Topic- " + msg[0].topic + "  | Payload- " +  msg[1]}, namespace='/Gate')
+            socketio.emit('Data_Sent', {'data': "sent at- " + str(msg)}, namespace='/Gate')
             if hasattr(status_data, "last_sent_data") and hasattr(status_data, "last_sent_data_ts") :
                 status_data.last_sent_data = msg[0].topic + msg[1]
                 status_data.last_sent_data_ts = str(datetime.now())
@@ -136,7 +136,8 @@ def settings_view():
     form = SignupForm()
     mqtt_view = mqtt_parameters.query.get(1)
     modbus_view = modbus_parameters.query.get(1)
-    return render_template('view.html',form =form, mqtt_view = mqtt_view , modbus_view=modbus_view , current_user= current_user)
+    ignition_view = ignition_parameter.query.get(1)
+    return render_template('view.html',form =form, mqtt_view = mqtt_view , modbus_view=modbus_view ,ignition_view=ignition_view ,current_user= current_user)
 
 
 @app.route('/edit', methods=['GET', 'POST'])
@@ -145,10 +146,12 @@ def setting_edit():
     form = SignupForm()
     mqtt_view = mqtt_parameters.query.get(1)
     modbus_view = modbus_parameters.query.get(1)
+    ignition_view = ignition_parameter.query.get(1)
     mqttform = MqttEditForm(obj=mqtt_view)
     modbusform = ModbusEditForm(obj=modbus_view)
+    ignitionform = IgnitionParaForm(obj=ignition_view)
     if request.method == 'GET':
-        return render_template('edit.html', form=form, mqtt_edit= mqttform, modbus_edit=modbusform)
+        return render_template('edit.html', form=form, mqtt_edit= mqttform, modbus_edit=modbusform, ignition_edit = ignitionform)
     elif request.method == 'POST':
         pass      
     else:
@@ -174,6 +177,24 @@ def mqtt_edit():
                     db.session.commit()
                 return redirect('/settings/view') 
 
+@app.route('/ignition/edit', methods=['GET', 'POST'])
+@login_required
+def ignition_edit():
+    form = SignupForm()
+    ignitionform = IgnitionParaForm()
+    if request.method == 'POST':
+        if ignitionform.validate_on_submit():
+                ignition_data = ignition_parameter.query.get(1)
+                if not ignition_data == None :
+                    ignition_data.group_id = ignitionform.group_id.data
+                    ignition_data.node_name = ignitionform.node_name.data
+                    db.session.commit()
+                elif ignition_data == None:
+                    ignition_data = ignition_parameter(ignitionform.group_id.data, ignitionform.node_name.data)
+                    db.session.add(ignition_data)
+                    db.session.commit()
+                return redirect('/settings/view') 
+
 @app.route('/modbus/edit', methods=['GET', 'POST'])
 @login_required
 def modbus_edit():
@@ -192,40 +213,37 @@ def modbus_edit():
                     db.session.commit()
                 return redirect('/settings/view') 
 
-@app.route('/pub/view')
-def pub_view():
+@app.route('/Dev/view')
+def mod_dev_view():
     form = SignupForm()
-    pubview = pub_mqtt_topics.query.all()
-    # pubview  = pub_mqtt_topics.query.filter(pub_mqtt_topics.mod_addresses.any(read_mod_registers.address >= 0)).all()
-    # for p in pubview:
-    #     print(p.mod_addresses)
-    return  render_template('pubView.html', pubview=pubview,form=form  )
+    moddevview = mod_device.query.all()
+    return  render_template('devView.html', moddevview=moddevview,form=form  )
 
 
-@app.route('/pub/create', methods=['GET', 'POST'])
-def pub_create():
-    pubform = PubMqttTopicsForm()
+@app.route('/Dev/create', methods=['GET', 'POST'])
+def mod_dev_create():
+    moddevform = ModDevicesForm()
     form = SignupForm()
     if request.method == 'GET':
-        return render_template('pubCreate.html', form=form, pubform= pubform )
+        return render_template('devCreate.html', form=form, moddevform= moddevform )
     elif request.method == 'POST':
-        if pubform.validate_on_submit():
-            newPubTopic = pub_mqtt_topics(pubform.topic.data, pubform.qos.data, pubform.retain.data)
+        if moddevform.validate_on_submit():
+            newPubTopic = mod_device(moddevform.dev_name.data)
             db.session.add(newPubTopic)
             db.session.commit()
-            return redirect('/pub/view')
+            return redirect('/Dev/view')
         else:
             return "Invalid Data Filed in Form"
     else:
             return "Invalid Form"
 
-@app.route('/pub/delete/<int:id>')
-def pub_edit(id):
-    pubdel = pub_mqtt_topics.query.get(id)
-    if pubdel:
-        db.session.delete(pubdel)
+@app.route('/Dev/delete/<int:id>')
+def mod_dev_del(id):
+    devdel = mod_device.query.get(id)
+    if devdel:
+        db.session.delete(devdel)
         db.session.commit()
-    return redirect('/pub/view')
+    return redirect('/Dev/view')
       
 
 @app.route('/modRead/view')
@@ -244,7 +262,7 @@ def modRead_create():
         return render_template('modReadCreate.html', form=form, modReadform= modReadform )
     elif request.method == 'POST':
         if modReadform.validate_on_submit():
-            newmodRead = read_mod_registers(modReadform.name.data,modReadform.address.data, modReadform.qty.data, modReadform.unit.data, modReadform.pp.data, modReadform.pub_topic_id.data[0])
+            newmodRead = read_mod_registers(modReadform.name.data,modReadform.address.data, modReadform.qty.data, modReadform.unit.data,modReadform.datatype.data,modReadform.byteorder.data,modReadform.wordorder.data , modReadform.pp.data, modReadform.mod_device_id.data[0])
             db.session.add(newmodRead)
             db.session.commit()
             return redirect('/modRead/view')
@@ -375,4 +393,4 @@ def Gate_disconnect():
 
 if __name__ == '__main__':
     init_db()   
-    app.run(port=5000, host="0.0.0.0", debug=True)
+    app.run(port=5000, host='10.87.61.111', debug=True)

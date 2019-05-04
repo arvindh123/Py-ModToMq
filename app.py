@@ -18,6 +18,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/database.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 MqStatParent, MqStatChild = Pipe()
 MqDataParent, MqDataChild = Pipe()
 ModStatParent, ModStatChild = Pipe()

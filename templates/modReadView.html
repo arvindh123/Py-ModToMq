@@ -47,9 +47,9 @@
         <div class="container-fluid ">
         <a class="btn btn-primary" href ="/modRead/create"> Create </a>
             <table class="table table-bordered">
-              <tr><th>Address</th><th>Qty</th><th>Unit</th><th>Topic</th><th>Delete</th></tr>
+              <tr><th>Name</th><th>Start Address</th><th>Qty</th><th>Unit</th><th>Data Type</th><th>Byte Order</th><th>Word Order</th><th>Post Proccess</th><th>Device Name</th><th>Delete</th></tr>
               {% for v in modreadview %}
-              <tr><td>{{ v.name }}  </td><td>{{ v.address }}  </td>  <td>{{ v.qty }} </td>  <td>{{ v.unit }} </td> <td>{{ v.pp }} </td> <td>{{ v.read_mod_registers.topic }} </td>  <td> <a class="btn btn-danger" href ="/modRead/delete/{{v.id}}"> Delete </a> </td>   </tr>
+              <tr><td>{{ v.name }}  </td><td>{{ v.address }}  </td>  <td>{{ v.qty }} </td>  <td>{{ v.unit }} </td> <td>{{ v.datatype }} </td> <td>{{ v.byteorder }} </td> <td>{{ v.wordorder }} </td> <td>{{ v.pp }} </td> <td>{{ v.device.dev_name }} </td>  <td> <a class="btn btn-danger" href ="/modRead/delete/{{v.id}}"> Delete </a> </td>   </tr>
               {% endfor %} 
             </table>
         </div>

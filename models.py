@@ -28,6 +28,7 @@ class modbus_address(db.Model):
     # def __init__(self, start_address, qty):
     #     self.start_address = start_address
     #     self.qty = qty
+
 class ignition_parameter(db.Model):
     __tablename__ = "ignition_parameter"
     id = db.Column(db.Integer, primary_key = True)
@@ -41,6 +42,7 @@ class mod_device(db.Model):
     __tablename__ = "mod_device"
     id = db.Column(db.Integer, primary_key = True)
     dev_name = db.Column(db.String(80) ,unique= True)
+    mod_addresses = db.relationship('read_mod_registers', backref='device',lazy=True)
     def __init__(self, dev_name):
         self.dev_name = dev_name
 
@@ -70,17 +72,6 @@ class modbus_parameters(db.Model):
         self.modbus_port=modbus_port
     
 
-class pub_mqtt_topics(db.Model):
-    __tablename__ = 'pub_mqtt_topics'
-    id = db.Column(db.Integer, primary_key = True)
-    topic = db.Column(db.String(150) , unique= True)
-    qos = db.Column(db.Integer)
-    retain = db.Column(db.Boolean)
-    mod_addresses = db.relationship('read_mod_registers', backref='read_mod_registers',lazy=True)
-    def __init__(self, topic, qos,retain):
-        self.topic = topic
-        self.qos = qos
-        self.retain = retain
 
 class read_mod_registers(db.Model):
     __tablename__ = 'read_mod_registers'
@@ -89,32 +80,23 @@ class read_mod_registers(db.Model):
     address = db.Column(db.Integer)
     qty = db.Column(db.Integer)
     unit = db.Column(db.Integer)
+    datatype = db.Column(db.String(80))
+    byteorder = db.Column(db.String(80))
+    wordorder = db.Column(db.String(80))
     pp = db.Column(db.Text)
-    pub_topic_id = db.Column(db.Integer, db.ForeignKey('pub_mqtt_topics.id'))
-    __table_args__ = (db.UniqueConstraint('name','address','pub_topic_id'),)
-    def __init__(self,name, address, qty,unit,pp,pub_topic_id):
+    device_id = db.Column(db.Integer, db.ForeignKey('mod_device.id'))
+    __table_args__ = (db.UniqueConstraint('name','address','device_id'),)
+    def __init__(self,name, address, qty,unit,datatype,byteorder,wordorder, pp,device_id):
         self.name=name
         self.address = address
         self.qty = qty
         self.unit = unit
+        self.datatype = datatype
+        self.byteorder = byteorder
+        self.wordorder = wordorder
         self.pp = pp
-        self.pub_topic_id= pub_topic_id
+        self.device_id= device_id
 
-class sub_mqtt_topics(db.Model):
-    __tablename__ = 'sub_mqtt_topics'
-    id = db.Column(db.Integer, primary_key = True)
-    topic = db.Column(db.String(150) , unique= True)
-    qos = db.Column(db.Integer)
-    retain = db.Column(db.Boolean)
-    mod_addresses = db.relationship('write_mod_registers', backref='write_mod_registers', lazy=False)
-
-class write_mod_registers(db.Model):
-    __tablename__ = 'write_mod_registers'
-    id = db.Column(db.Integer, primary_key = True)
-    address = db.Column(db.Integer , unique= True)
-    qty = db.Column(db.Integer)
-    unit = db.Column(db.Integer)
-    sub_topic_id = db.Column(db.Integer, db.ForeignKey('sub_mqtt_topics.id'))
 
 
 class all_status(db.Model):
