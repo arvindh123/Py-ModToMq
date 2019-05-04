@@ -1,0 +1,72 @@
+<html lang="en">
+<head>
+  <title>Modbus to MQTT Gateway</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" style= "font-size:150%;" href="/">Gateway</a>
+    </div>
+    <!-- <ul class="nav navbar-nav">
+      <li class="active"><a href="#">Home</a></li>
+      <li><a href="#">Page 1</a></li>
+      <li><a href="#">Page 2</a></li>
+    </ul> -->
+    {% if current_user.is_authenticated %}
+
+        <ul class="nav navbar-nav  navbar-right"> 
+            <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Hi {{ current_user.email }}!  <span class="caret"></span></a>
+              <ul class="dropdown-menu navbar-right">
+                <li><a href="/logout">Logout</a></li>
+                <li><a href="/settings/view">Settings</a></li>
+              </ul>
+            </li> 
+        </ul>
+        
+    {% else %}
+        <form class="navbar-form navbar-right" method="POST" action="/login">
+            {{ form.hidden_tag() }}
+        <div class="form-group">
+                <span style= color:aliceblue>Login ID</span> {{ form.email(size=20) }}
+                <span style= color:aliceblue> Password </span>{{ form.password(size=20) }}
+        </div>
+        <input type="submit" class="btn btn-success" value = Login ></button>
+        </form>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="container-fluid ">
+  <form method="POST" action="/mqtt/edit">
+    {{ mqtt_edit.hidden_tag() }}
+    <table>
+    
+    <tr><td>{{ mqtt_edit.mqtt_ip.label }} {{ mqtt_edit.mqtt_ip(size=20) }}  </td>  </tr>
+    <tr><td>{{ mqtt_edit.mqtt_port.label }} {{ mqtt_edit.mqtt_port(size=20) }} </td>  </tr>
+    <tr><td>{{ mqtt_edit.mqtt_user_name.label }} {{ mqtt_edit.mqtt_user_name(size=20) }} </td>  </tr>
+    <tr><td>{{ mqtt_edit.mqtt_password.label }} {{ mqtt_edit.mqtt_password(size=20) }} </td>  </tr>
+    <tr><td>{{ mqtt_edit.mqtt_access_token.label }} {{ mqtt_edit.mqtt_access_token(size=20) }} </td>  </tr>
+  </table>
+    <input type="submit" value="Save">
+  </form>
+
+  <form method="POST" action="/modbus/edit">
+    {{ modbus_edit.hidden_tag() }}
+    <table>
+    
+    <tr><td>{{ modbus_edit.modbus_ip.label }} {{  modbus_edit.modbus_ip(size=20) }}  </td>  </tr>
+    <tr><td>{{ modbus_edit.modbus_port.label }} {{ modbus_edit.modbus_port(size=20) }} </td>  </tr>
+  </table>
+    <input type="submit" value="Save">
+  </form>
+</div>
+
+</body>
+</html>

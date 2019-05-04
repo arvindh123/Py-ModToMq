@@ -1,0 +1,229 @@
+<html lang="en">
+<head>
+  <title>Modbus to MQTT Gateway</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+            function clearBox(elementID)
+        {
+            document.getElementById(elementID).innerHTML = "";
+        }
+        $(document).ready(function() {
+            // Use a "/test" namespace.
+            // An application can open a connection on multiple namespaces, and
+            // Socket.IO will multiplex all those connections on a single
+            // physical channel. If you don't care about multiple channels, you
+            // can set the namespace to an empty string.
+            namespace = '/Gate';
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'Connected!'});
+            });
+            // Event handler for server sent data.
+            // The callback function is invoked whenever the server emits data
+            // to the client. The data is then displayed in the "Received"
+            // section of the page.
+            socket.on('my_response', function(msg) {
+                $('#log').append('<br>' + $('<div/>').text('Received :' + msg.data).html());
+            });
+
+            socket.on('my_event', function(msg) {
+                console.log(msg.data)
+                $('#log').append('<br>' + $('<div/>').text('Received :' + msg.data).html());
+            });
+
+
+            socket.on('Status', function(msg) {
+                $('#log').append('<br>' + $('<div/>').text('Received  :'  + msg.data).html());
+            });
+
+            
+            socket.on('Data_Sent', function(msg) {
+                $('#mqtt_msg').html('Received :' + msg.data);
+            });
+            
+            $('form#emit').submit(function(event) {
+                socket.emit('my_event', {data: $('#emit_data').val()});
+                return false;
+            });
+
+            $('form#MqStart').submit(function(event) {
+                socket.emit('Mqtt_Cmd', {data: 'start'} );
+                return false;
+            });
+
+            $('form#MqStop').submit(function(event) {
+                socket.emit('Mqtt_Cmd', {data: 'stop'} );
+                return false;
+            });
+
+            $('form#ModStart').submit(function(event) {
+                socket.emit('Mod_Cmd', {data: 'start'} );
+                return false;
+            });
+            $('form#ModStop').submit(function(event) {
+                socket.emit('Mod_Cmd', {data: 'stop'} );
+                return false;
+            });
+
+            
+
+            $('form#broadcast').submit(function(event) {
+                socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
+                return false;
+            });
+            $('form#join').submit(function(event) {
+                socket.emit('join', {room: $('#join_room').val()});
+                return false;
+            });
+            $('form#leave').submit(function(event) {
+                socket.emit('leave', {room: $('#leave_room').val()});
+                return false;
+            });
+            $('form#send_room').submit(function(event) {
+                socket.emit('my_room_event', {room: $('#room_name').val(), data: $('#room_data').val()});
+                return false;
+            });
+            $('form#close').submit(function(event) {
+                socket.emit('close_room', {room: $('#close_room').val()});
+                return false;
+            });
+            $('form#disconnect').submit(function(event) {
+                socket.emit('disconnect_request');
+                return false;
+            });
+        });
+    </script>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" style= "font-size:150%;" href="/">Modbus to MQTT Gateway Web Interface</a>
+    </div>
+    <!-- <ul class="nav navbar-nav">
+      <li class="active"><a href="#">Home</a></li>
+      <li><a href="#">Page 1</a></li>
+      <li><a href="#">Page 2</a></li>
+    </ul> -->
+    {% if current_user.is_authenticated %}
+
+        <ul class="nav navbar-nav  navbar-right"> 
+            <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Hi {{ current_user.email }}!  <span class="caret"></span></a>
+              <ul class="dropdown-menu navbar-right">
+                <li><a href="/logout">Logout</a></li>
+                <li><a href="/settings/view">Mqtt & Modbus Settings</a></li>
+                <li><a href="/pub/view">Publish Topics</a></li>
+                <li><a href="/modRead/view">Modbus Read Registers FC 0x03 </a></li>
+              </ul>
+            </li> 
+        </ul>
+        
+    {% else %}
+        <form class="navbar-form navbar-right" method="POST" action="/login">
+            {{ form.hidden_tag() }}
+        <div class="form-group">
+                <span style= color:aliceblue>Login ID</span> {{ form.email(size=20) }}
+                <span style= color:aliceblue> Password </span>{{ form.password(size=20) }}
+        </div>
+        <input type="submit" class="btn btn-success" value = Login ></button>
+        </form>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="container-fluid ">
+        <h3>Last Sent Message</h3>
+        <pre class="box" id="mqtt_msg"> {{last_status.last_sent_data_ts}} -- {{ last_status.last_sent_data }}</pre>
+    <div class="">
+            <div class="col-lg-6"> 
+                <table class="table"> <tbody> 
+                    <tr>
+                        <td>Mqtt Server :</td>
+                        <td id = "mqtt_ip">{{ mqtt_view.mqtt_ip}}  </td>
+                    </tr>
+                    <tr>
+                            <td>Mqtt Port :</td>
+                            <td id = "mqtt_port"> {{ mqtt_view.mqtt_port}}</td>
+                    </tr>
+                    
+                    
+                    {% if current_user.is_authenticated %}
+                    <tr>
+                        <td >
+                            <form id="MqStart" method="POST" action='#'>
+                                <input type="submit" value="MQTT Start">
+                            </form>
+                        </td>
+                    </tr>
+    
+                    <tr>
+                        <td> 
+                            <form id="MqStop" method="POST" action='#'>
+                                <input type="submit" value="MQTT Stop">
+                            </form> 
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                </tbody> </table>
+            </div> 
+            <div class="col-lg-6">
+                <table class="table"> <tbody> 
+                    <tr>
+                        <td>Modbus Server :</td>
+                        <td id = "mqtt_ip"> {{ modbus_view.modbus_ip}} </td>
+                    </tr>
+                    <tr>
+                        <td>Modbus Port :</td>
+                        <td id = "mqtt_port"> {{modbus_view.modbus_port }}</td>
+
+                    </tr>
+                    {% if current_user.is_authenticated %}
+                    <tr>
+                        
+                        <td >
+                            <form id="ModStart" method="POST" action='#'>
+                                <input type="submit" value="Modbus Start">
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td> 
+                            <form id="ModStop" method="POST" action='#'>
+                                <input type="submit" value="Modbus Stop">
+                            </form> 
+                         </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td> 
+                        Status Log
+                        </td>
+                        <td id="log"> 
+                            {{last_status.mqtt_status}} <br>
+                            {{last_status.modbus_status}}
+                         </td>
+                    </tr>
+                </tbody> </table>
+            </div>
+           
+           
+    </div>
+
+</div>
+
+</body>
+</html>
